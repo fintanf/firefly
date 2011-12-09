@@ -24,8 +24,6 @@ module Firefly
       raise Firefly::InvalidUrlError.new unless valid_url?(long_url)
       raise Firefly::InvalidCodeError.new unless valid_code?(code)
 
-      long_url = normalize_url(long_url)
-
       the_url = Firefly::Url.first(:url => long_url) || Firefly::Url.create(:url => long_url)
       return the_url unless the_url.code.nil?
 
@@ -45,12 +43,6 @@ module Firefly
         end
 
         code
-      end
-
-      # Normalize the URL
-      def self.normalize_url(url)
-        #url = URI.escape(URI.unescape(url))
-        URI.parse(url).normalize.to_s
       end
 
       # Validates the URL to be a valid http or https one.

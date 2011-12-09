@@ -200,7 +200,13 @@ module Firefly
 
       @url            = params[:url]
       @requested_code = params[:short]
-      @code, @result  = generate_short_url(@url, @requested_code)
+      @referrer = request.referrer
+
+      if @config.has_key?(:allowed_api_add_referrers) and (!@referrer or not @config[:allowed_api_add_referrers].any?{|r| @referrer.include?(r) })
+        @code, @result = nil, "ERROR: Not allowed."
+      else
+        @code, @result  = generate_short_url(@url, @requested_code)
+      end
       invalid = @code.nil?
 
       if params[:visual]
