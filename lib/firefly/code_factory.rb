@@ -6,18 +6,25 @@ module Firefly
     property :id,    Serial
     property :count, Integer, :default => 0
 
+    @@mutator = Proc.new {|c| c } #Id
+
     # Returns the next auto increment value and updates
     # the counter
     def self.next_code!
-      code = nil
+      count = nil
 
       Firefly::CodeFactory.transaction do
         c = Firefly::CodeFactory.first
-        code = Firefly::Base62.encode(c.count + 1)
-        c.update(:count => c.count + 1)
+        count = c.count + 1
+        c.update(:count => count)
       end
 
-      code
+      mutated = @@mutator.call(count)
+      Firefly::Base62.encode(mutated)
+    end
+
+    def self.set_mutator(mutator)
+      @@mutator = mutator
     end
 
   end
