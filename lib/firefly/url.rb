@@ -40,7 +40,7 @@ module Firefly
       def self.get_me_a_code
         code = Firefly::CodeFactory.next_code!
 
-        if Firefly::Url.count(:code => code) > 0 
+        if Firefly::Url.count(:code => code) > 0
           code = get_me_a_code
         end
 
@@ -49,11 +49,11 @@ module Firefly
 
       # Normalize the URL
       def self.normalize_url(url)
-        url = URI.escape(URI.unescape(url))
+        #url = URI.escape(URI.unescape(url))
         URI.parse(url).normalize.to_s
       end
 
-      # Validates the URL to be a valid http or https one. 
+      # Validates the URL to be a valid http or https one.
       def self.valid_url?(url)
         url.match(Firefly::Url::VALID_URL_REGEX)
       end
