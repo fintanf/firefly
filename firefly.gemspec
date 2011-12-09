@@ -20,6 +20,7 @@ Gem::Specification.new do |s|
   s.require_paths = ["lib"]
 
   s.add_runtime_dependency("sinatra",           ["~> 1.2.6"])
+  s.add_runtime_dependency("rack-contrib",      ["~> 1.1.0"])
   s.add_runtime_dependency("dm-core",           ["~> 1.0.2"])
   s.add_runtime_dependency("dm-migrations",     ["~> 1.0.2"])
   s.add_runtime_dependency("dm-transactions",   ["~> 1.0.2"])
@@ -27,6 +28,8 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency("dm-mysql-adapter",  ["~> 1.0.2"])
   s.add_runtime_dependency("haml",              ["~> 3.0.18"])
   s.add_runtime_dependency("escape_utils",      ["~> 0.2.3"])
+  s.add_runtime_dependency("json",              ["~> 1.6.1"])
+
 
   s.add_development_dependency("rspec",             ["~> 2.5.0"])
   s.add_development_dependency("rack-test",         ["~> 0.5.4"])

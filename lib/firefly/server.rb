@@ -2,6 +2,8 @@
 require 'sinatra/base'
 require 'haml'
 require 'digest/md5'
+require 'json'
+require 'rack/contrib/jsonp'
 
 module Firefly
   class InvalidUrlError < StandardError
@@ -11,6 +13,9 @@ module Firefly
   end
 
   class Server < Sinatra::Base
+    use Rack::JSONP
+    use Rack::ContentLength
+
     enable :sessions
 
     if Firefly.environment == "development"
@@ -102,15 +107,21 @@ module Firefly
       def generate_short_url(url = nil, requested_code = nil)
         code, result = nil, nil
 
-        begin
-          ff_url  = Firefly::Url.shorten(url, requested_code)
-          code, result = ff_url.code, "http://#{config[:hostname]}/#{ff_url.code}"
-        rescue Firefly::InvalidUrlError
-          code, result = nil, "ERROR: The URL you posted is invalid."
-        rescue Firefly::InvalidCodeError
-          code, result = nil, "ERROR: The code is invalid or already exists."
-        rescue
-          code, result = nil, "ERROR: An unknown error occured"
+        if url == nil
+          code, result = nil, "ERROR: No URL provided."
+        elsif @config.has_key?(:allowed_domains) and not @config[:allowed_domains].any? { |domain| url.include?(domain) }
+          code, result = nil, "ERROR: Not permitted to shorten URLs for that domain."
+        else
+          begin
+            ff_url  = Firefly::Url.shorten(url, requested_code)
+            code, result = ff_url.code, "http://#{config[:hostname]}/#{ff_url.code}"
+          rescue Firefly::InvalidUrlError
+            code, result = nil, "ERROR: The URL you posted is invalid."
+          rescue Firefly::InvalidCodeError
+            code, result = nil, "ERROR: The code is invalid or already exists."
+          rescue
+            code, result = nil, "ERROR: An unknown error occured"
+          end
         end
 
         return code, result
@@ -185,7 +196,7 @@ module Firefly
     #
     # Returns the shortened URL
     api_add = lambda {
-      validate_api_permission or return "Permission denied: Invalid API key"
+      validate_api_permission or return "Permission denied: Invalid API key" if not @config[:public_api_add]
 
       @url            = params[:url]
       @requested_code = params[:short]
@@ -196,36 +207,24 @@ module Firefly
         store_api_key(params[:api_key])
         @code.nil? ? haml(:error) : redirect("/?highlight=#{@code}")
       else
-        head 422 if invalid
-        @result
+        content_type :json
+
+        if invalid
+          {
+            :status => 'ERROR',
+            :message => @result
+          }
+        else
+          {
+            :status => 'OK',
+            :url => @result
+          }
+        end.to_json
       end
     }
 
     get '/api/add', &api_add
     post '/api/add', &api_add
-
-    api_share = lambda {
-      validate_share_permission or return "Cannot share that URL."
-
-      @url = params[:url]
-      @code, @result = generate_short_url(@url, nil)
-      invalid = @code.nil?
-
-      params[:title] ||= ""
-      title = URI.unescape(params[:title])
-
-      case (params[:target].downcase.to_sym)
-        when :twitter
-          redirect(URI.escape("http://twitter.com/home?status=#{tweet("http://#{config[:hostname]}/#{@code}", title)}"))
-        when :hyves
-          redirect(URI.escape("http://www.hyves.nl/profielbeheer/toevoegen/tips/?#{hyves_post("http://#{config[:hostname]}/#{@code}", title)}"))
-        when :facebook
-          redirect(URI.escape("http://www.facebook.com/share.php?u=http://#{config[:hostname]}/#{@code}"))
-        end
-    }
-
-    get '/api/share', &api_share
-    post '/api/share', &api_share
 
     # GET /b3d+
     #
