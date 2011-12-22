@@ -283,6 +283,11 @@ module Firefly
       end
     end
 
+    #Catch-all route
+    get '/*' do
+      status 404
+    end
+
     def initialize config = {}, &blk
       super
       @config = config.is_a?(Config) ? config : Firefly::Config.new(config)
